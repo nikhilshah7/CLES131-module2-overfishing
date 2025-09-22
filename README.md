@@ -1,7 +1,8 @@
 # Module 2: Overfishing
 
 ## Team members and contributions
-To be updated
+
+ - Nikhil Shah: everything
 
 ## Learning objectives
 
