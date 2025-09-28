@@ -45,6 +45,12 @@ One of the main metadata tables is 'stock':
 
 -   How many stocks are there and how many species do they represent?
 
+```{r}
+nrow(stock)
+
+n(unique(stock$tsn))
+```
+
 -   What are the top three most common stocks? (Okay to use common names; these are standardized for fish)
 
 -   In your own words, describe the unit of observation in the 'stock' table and some associated variables that describe it.
