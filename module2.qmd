@@ -47,23 +47,56 @@ One of the main metadata tables is 'stock':
 
 ```{r}
 nrow(stock)
+# 1514
 
-n(unique(stock$tsn))
+length(unique(stock$tsn))
+# 398
 ```
 
 -   What are the top three most common stocks? (Okay to use common names; these are standardized for fish)
 
+```{r}
+stock |>
+  group_by(commonname) |>
+  summarize(n_stocks = n()) |>
+  arrange(desc(n_stocks))
+
+# Pink salmon (170)
+# Sockeye salmon (104)
+# Chum salmon (99)
+```
+
 -   In your own words, describe the unit of observation in the 'stock' table and some associated variables that describe it.
+
+  - Each row describes one fish stock, a population of a species of fish in one given location. Variables relate to the species of fish (tsn, scientificname, commonname), stock location (areaid, region, primary_country), and stock status (state).
 
 ### Q2 (1 point)
 
 The next main metadata table is 'assessment':
 
 -   What is the unit of observation in the 'assessment' table? How is this related to the unit of observation in the 'stock' table?
+  
+```{r}
+# Each row is one assessment of one stock.
+
+length(unique(assessment$stockid))
+
+# Each stock is assessed at least once in this table (1514 stocks total). Stocks may be assessed multiple times, but each assessment only assesses one stock.
+```
 
 -   It seems like 'stockid' and 'assessyear' might uniquely identify each assessment. Is this the case? If not, why not?
 
+```{r}
+assessment |>
+  group_by(stockid, assessyear) |>
+  summarize(n = n()) |>
+  arrange(desc(n))
+
+# No, some stocks were assessed multiple times for the same time period, such as anchovy in Spain from 1989-2016.
+```
+
 -   Which variable(s) might you use to join 'stock' and 'assessment'?
+  - stockid, as it seems to be the only shared variable between the two datasets.
 
 ### Q3 (1 point)
 
@@ -71,13 +104,18 @@ In section B of the Database Quick Guide, additional metadata tables are listed 
 
 | B table      | Associated table | join column from B | join column from other |
 |------------------|------------------|------------------|------------------|
-| area         |                  |                    |                        |
-| assessmethod |                  |                    |                        |
-| assessor     |                  |                    |                        |
-| management   |                  |                    |                        |
-| taxonomy     |                  |                    |                        |
+| area         | stock            | areaid             | areaid                 |
+| assessmethod | assessment       | methodshort        | assessmethod           |
+| assessor     | assessment       | assessorid         | assessorid             |
+| management   | stock            | country            | primary_country        |
+| taxonomy     | stock            | tsn                | tsn                    |
 
 \*Note that assessmethod is not a data.frame, which was perhaps an oversight; consider turning it into one for the ease of using tidyverse functions.
+
+```{r}
+assessmethod <- data.frame(assessmethod)
+```
+
 
 ### Q4 (1 point)
 
