@@ -121,9 +121,18 @@ assessmethod <- data.frame(assessmethod)
 
 There are two main data tables described in section C, but their key attributes are difficult to understand. Join the two main data tables with their respective metrics tables (section D):
 
--   Briefly describe the contents of each joined table.
+```{r}
+bioparams_metrics <- bioparams |>
+  left_join(biometrics, join_by(bioid == biounique))
 
+timeseries_metrics <- timeseries |>
+  left_join(tsmetrics, join_by(tsid == tsunique))
+```
+
+-   Briefly describe the contents of each joined table.
+  - Biometrics adds detailed biological data according to the code that splits each stock into several sets of "demographics" related to ages, deaths, spawning, etc. Tsmetrics adds information about what is being measured to give the provided value for each assessment in each year. 
 -   What is accomplished by joining these tables?
+  - The bioid/tsid codes aren't really useful for obtaining usable information from the tables, so all the detailed information that that column encodes can be expanded and added to the tables if necessary by joining, which allows all that data to be found in one table while not using as much space.
 
 ## Overexploitation of Atlantic cod
 
@@ -135,13 +144,78 @@ The collapse of the Atlantic cod fisheries is well documented. Let's see if we c
 
 -   How many unique fish stocks comprise "Atlantic cod" and what regions do they come from?
 
+```{r}
+stock |>
+  filter(commonname == "Atlantic cod") |>
+  nrow()
+# 28
+
+stock |>
+  filter(commonname == "Atlantic cod") |>
+  group_by(region) |>
+  summarize(count = n())
+# Canada East Coast (12)
+# Europe non EU (6)
+# European Union (8)
+# US East Coast (2)
+```
+
+
 Create a vector of the 'stockid' associated with "Atlantic cod". Then turn your attention to the previously-joined timeseries/tsmetrics table and create a subsetted dataframe with only observations of "Atlantic cod" that have a non-NA value. This table reports many years and many metrics, while we are primarily interested in the years since 1950.
 
+```{r}
+codstock <- stock |>
+  filter(commonname == "Atlantic cod")
+
+codstockid <- codstock$stockid
+  
+cod_timeseries <- timeseries_metrics |>
+  semi_join(codstock, by = 'stockid')
+```
+
 -   Which metrics are most commonly reported for Atlantic cod in this timeframe and what do they mean?
+
+```{r}
+cod_timeseries |>
+  group_by(tslong) |>
+  summarize(count = n()) |>
+  arrange(desc(count))
+
+# Catch divided by mean catch (7442): Ratio between catch in this assessment and the mean
+# General total catch (7442): Total amount of fish extracted from water in metric tons
+# Total landings (6278): Total amount of fish brought to land and not discarded, portion of total catch, in metric tons
+# Spawning stock biomass (5985): Biomass of all fish in the area that are able to reproduce, in metric tons
+```
+
 
 ### Q6 (1 point)
 
 Make a timeseries figure for each stock of Atlantic cod. Rather than coloring by the identity of the stock, color by the region it comes from (this may require joining). Use `facet_*()` to plot both metrics in a single code chunk. Connect the points for each stock and focus on the period since 1950. Update until the figure is easily interpretable.
+
+```{r}
+regions <- stock |>
+  select(stockid, region)
+
+cod_timeseries_region <- cod_timeseries |>
+  left_join(regions)
+
+# only metrics: general total catch + total landings
+
+cod_timeseries_region |>
+  filter(tsshort == 'TL' | tsshort == 'TCbest') |>
+  filter(tsyear >= 1950) |>
+  ggplot(aes(x = tsyear,
+             y = tsvalue,
+             color = region)) +
+  geom_line(aes(group = stockid)) +
+  geom_point(size = 0.1) +
+  facet_wrap(~tslong, 
+             nrow = 2) +
+  labs(x = 'Year',
+       y = 'Metric Tons Fish',
+       title = 'Timeseries of fish caught from Atlantic Cod stocks') +
+  theme_bw()
+```
 
 -   What happened to Atlantic cod stocks during the period 1950-present? What information does each metric convey?
 
