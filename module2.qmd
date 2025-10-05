@@ -241,12 +241,13 @@ cod_timeseries_regional <- cod_timeseries_region |>
   filter(tsshort == 'TL') |>
   filter(tsyear >= 1950) |>
   group_by(region, tsyear) |>
-  summarize(region_landings = sum(tsvalue, na.rm = T))
+  summarize(region_metric = sum(tsvalue, na.rm = T)) |>
+  mutate(metric = 'Total Landings')
   
   
 cod_timeseries_regional |>
   ggplot(aes(x = tsyear,
-             y = region_landings,
+             y = region_metric,
              color = region)) +
   geom_line() +
   geom_point(size = 0.6) +
@@ -272,7 +273,7 @@ events <- data.frame(event = c('1976: MSFCMA', '1986: Northeast Fisheries Manage
 cod_timeseries_regional |>
   filter(region == 'Canada East Coast' | region == 'US East Coast') |>
   ggplot(aes(x = tsyear,
-             y = region_landings,
+             y = region_metric,
              color = region)) +
   geom_line() +
   geom_point(size = 0.1) +
@@ -291,6 +292,41 @@ cod_timeseries_regional |>
 
 What happened to Atlantic cod stocks for each region following each piece of legislation or management plan, and why do you think this was so? Your multi-paragraph answer should be informed by content from the book chapter; additional sources are optional, and all sources should be cited.
 
---
+```{r}
+events <- events |>
+  rbind(data.frame(event = '1992: Canadian moratorium',
+                   year = 1992))
 
+cod_timeseries_regional_spawn <- cod_timeseries_region |>
+  filter(tsshort == 'SSB') |>
+  filter(tsyear >= 1950) |>
+  group_by(region, tsyear) |>
+  summarize(region_metric = sum(tsvalue, na.rm = T)) |>
+  mutate(metric = 'Spawning Stock Biomass') |>
+  bind_rows(cod_timeseries_regional)
 
+cod_timeseries_regional_spawn |>
+  filter(region == 'Canada East Coast') |>
+  ggplot(aes(x = tsyear,
+             y = region_metric)) +
+  geom_line(color = 'salmon') +
+  geom_point(size = 0.3,
+             color = 'salmon') +
+  geom_vline(data = events,
+             aes(xintercept = year,
+                 linetype = event)) +
+  facet_grid(rows = vars(metric),
+             cols = vars(region)) +
+  labs(x = 'Year',
+       y = 'Metric Tons Fish',
+       title = 'Timeseries of spawning stock biomass in Atlantic Cod stocks') +
+  theme_bw()
+```
+
+While the dataset seems to be lacking a lot of data for the US East Coast, it is essentially complete for Canada East Coast, which has experienced a tumultuous series of events related to its fish stock in the last fifty years. 
+
+In the mid-1970s, roughly when US Congress passed the Magnuson-Stevens Fishery Conservation and Management Act (Brownell et al., 2023), it became evident that large volumes of fishing of Atlantic cod could pose a problem for local fish stocks, so the Canadian government instated a similar ban on foreign fishing within Canadian waters (MacDowell, 2012), which promoted a significant rise in fish stocks. However, this simply allowed local fishing to supplant foreign fishing, and landing numbers stayed the same, even under scientific advisories to reduce the number of fish allowed to be caught. Around 1990, stocks collapsed heavily. Canada placed a moratorium on cod fishing in 1992 (MEA, 2005), which led to a drop in landings to near-zero, but this did not induce a recovery in fish stocks for several decades. 
+
+The authors of Extinction Stories suggest that overfishing may have led to consolidation of the resulting groups of fish (Brownell et al., 2023), and the decreased amount of groups made stocks extremely vulnerable to further fishing targeting the new, large groups, even when staying within fishing limits. This extreme reduction in fish population would have made it very difficult for fish populations to recover as fast as fishing regulation agencies might have expected or hoped for. Even 30+ years after the moratorium was instated, cod populations have failed to recover consistently to pre-1970s levels. This exemplifies how extreme, poorly-managed overfishing for even a short period of time can collapse fish stocks for several decades.
+
+MacDowell, L. (2012). An Environmental History of Canada. Vancouver UBC Press.
